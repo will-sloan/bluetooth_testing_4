@@ -2,8 +2,8 @@
 import sys
 import bluetooth
 
-#uuid = "8888"
-service_matches = bluetooth.find_service()
+uuid = "8888"
+service_matches = bluetooth.find_service(uuid =uuid)
 print(service_matches)
 if len(service_matches) == 0:
     print("couldnt find service")
