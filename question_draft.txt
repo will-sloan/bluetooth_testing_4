@@ -1,0 +1,108 @@
+I'm trying to send commands through a raspberry pi 4 to a Adafruit nrf52832 over BLE. I can use gattlib to scan for BLE devices and it finds the Adafruit device, but when I try to connect to it says, "Timed out connecting to CA:34:A7:E4:DF:50 after 5.0 seconds.". It seems I can see the bluetooth device, but when trying to connect it does not work.
+
+I have tried connecting to the MAC Address of the bluetooth device but there I am not sure of a way of connecting to the bluetooth device without the port. I have successful paired the device with my raspberry pi using bluetoothctl but cannot do it with python. Libraries I have tried using are pygatt, pygattlib (which I have successfully used to detect the device), and Adafruit Python BLE.
+
+I also tried to connect by UUID without success.
+
+The Scanner:
+
+from gattlib import DiscoveryService
+
+service = DiscoveryService()
+devices = service.discover(2)
+
+for address, name in list(devices.items()):
+    print("name: {}, address: {}".format(name, address))
+How I tried to connect to the BLE Device:
+
+import pygatt
+import time
+try:
+    adapter.start()
+    device = adapter.connect('CA:34:A7:E4:DF:50')
+
+    print("Connected")
+finally:
+    adapter.stop()
+
+The UUID connector:
+
+
+
+The C code running on the Adafruit, some constants are from this being a repurposed bit of example code:
+
+BLEService        service = BLEService(8888);
+BLECharacteristic service = BLECharacteristic(UUID16_CHR_HEART_RATE_MEASUREMENT);
+int bluePin = 7;
+
+BLEDis bledis;    
+BLEBas blebas;
+void setup()
+{
+  pinMode(bluePin, OUTPUT);
+  Serial.begin(115200);
+  while ( !Serial ) delay(10);  
+
+  Bluefruit.begin();
+
+  Bluefruit.setName("LED Light");
+
+  Bluefruit.setConnectCallback(connect_callback);
+  Bluefruit.setDisconnectCallback(disconnect_callback);
+
+  bledis.setManufacturer("Adafruit Industries");
+  bledis.setModel("Bluefruit Feather52");
+  bledis.begin();
+
+  blebas.begin();
+  blebas.write(100);
+
+  setupHRM(&hrms);
+
+  startAdv(&hrms);
+}
+
+void startAdv(BLEService* temp)
+{
+  // Advertising packet
+  Bluefruit.Advertising.addFlags(BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE);
+  Bluefruit.Advertising.addTxPower();
+
+  // Include HRM Service UUID
+  Bluefruit.Advertising.addService(*temp);
+
+  // Include Name
+  Bluefruit.Advertising.addName();
+
+  Bluefruit.Advertising.restartOnDisconnect(true);
+  Bluefruit.Advertising.setInterval(32, 244);    // in unit of 0.625 ms
+  Bluefruit.Advertising.setFastTimeout(30);      // number of seconds in fast mode
+  Bluefruit.Advertising.start(0);                // 0 = Don't stop advertising after n seconds
+}
+
+void loop()
+{
+  if(digitalRead(irPin) == LOW && notSet){
+    Serial.println("DETECTED");
+    setupHRM(&irUUID);
+    startAdv(&irUUID);
+    timeDelay = millis();
+    notSet = false;
+  }else if(millis()-timeDelay > 2000 && !notSet){
+    notSet = true;
+    setupHRM(&hrms);
+    startAdv(&hrms);
+  }
+
+  if ( Bluefruit.connected() ) {
+    if (canGrabValue) {
+      delay(50);
+      uint8_t loc_value = toggleCUUID.read8();
+      Serial.print("True Reading");
+      Serial.println(loc_value);
+      event(loc_value);
+      canGrabValue = false;
+    }
+  }
+}
+
