@@ -9,6 +9,6 @@ try:
 	adapter.start()
 	device = adapter.connect('CA:34:A7:E4:DF:50')
 	
-	device.subscribe(callback= handle_data)
+	print("Connected")
 finally:
 	adapter.stop()
